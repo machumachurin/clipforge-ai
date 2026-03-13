@@ -624,9 +624,20 @@ function renderSNSPosts(posts) {
         <div class="output-item" style="align-items: flex-start;">
             <span class="output-item-number">${i + 1}</span>
             <span class="output-item-text">${escapeHtml(post)}</span>
-            <button class="copy-btn" onclick="copyToClipboard(this, \`${escapeTemplate(post)}\`)">📋 コピー</button>
+            <div class="output-item-actions">
+                <button class="copy-btn" onclick="copyToClipboard(this, \`${escapeTemplate(post)}\`)">📋 コピー</button>
+                <button class="tweet-btn" onclick="postToTwitter(\`${escapeTemplate(post)}\`)">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    Xに投稿
+                </button>
+            </div>
         </div>
     `).join('');
+}
+
+function postToTwitter(text) {
+    const tweetUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+    window.open(tweetUrl, '_blank', 'width=600,height=400');
 }
 
 function renderDescription(description) {
