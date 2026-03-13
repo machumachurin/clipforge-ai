@@ -3,9 +3,9 @@
 // この関数はVercelのサーバー上で動き、OpenAI APIと安全に通信します。
 // ユーザーのブラウザからは直接APIキーが見えないようにしています。
 
-import OpenAI from 'openai';
+const OpenAI = require('openai').default || require('openai');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // CORS（クロスオリジン）対応
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
