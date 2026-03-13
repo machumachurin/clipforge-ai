@@ -812,6 +812,101 @@ img {
     color: var(--color-accent-primary);
 }
 
+/* Clip URL Input */
+.clip-url-group {
+    background: rgba(145, 71, 255, 0.03);
+    border: 1px dashed rgba(145, 71, 255, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.clip-url-input-wrapper {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.clip-url-input-wrapper input {
+    flex: 1;
+}
+
+.btn-clip-fetch {
+    padding: var(--space-md) var(--space-lg);
+    background: rgba(145, 71, 255, 0.15);
+    border: 1px solid rgba(145, 71, 255, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--color-accent-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+.btn-clip-fetch:hover {
+    background: rgba(145, 71, 255, 0.25);
+    border-color: var(--color-accent-primary);
+}
+
+.clip-url-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--space-sm);
+}
+
+.clip-status {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    animation: fadeInUp 0.3s ease forwards;
+}
+
+.clip-status.success {
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: var(--color-success);
+}
+
+.clip-status.error {
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: var(--color-error);
+}
+
+.spinner-small {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(145, 71, 255, 0.3);
+    border-top-color: var(--color-accent-primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.input-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.input-divider::before,
+.input-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Generate Button */
 .btn-generate {
     width: 100%;

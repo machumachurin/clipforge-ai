@@ -168,6 +168,28 @@
             <div class="generator-app">
                 <!-- 入力エリア -->
                 <div class="generator-input-panel">
+                    <!-- クリップURL自動入力 -->
+                    <div class="input-group clip-url-group">
+                        <label for="clipUrl">
+                            🔗 TwitchクリップURL（貼るだけで自動入力）
+                        </label>
+                        <div class="clip-url-input-wrapper">
+                            <input type="text" id="clipUrl" placeholder="https://clips.twitch.tv/... を貼り付け">
+                            <button class="btn btn-clip-fetch" id="fetchClipBtn" type="button">
+                                <span class="fetch-text">自動入力</span>
+                                <span class="fetch-loading" style="display:none;">
+                                    <span class="spinner-small"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <p class="clip-url-hint">クリップURLを貼ると、ゲーム名・チャンネル名を自動取得します</p>
+                        <div class="clip-status" id="clipStatus" style="display:none;"></div>
+                    </div>
+
+                    <div class="input-divider">
+                        <span>または手動で入力</span>
+                    </div>
+
                     <div class="input-group">
                         <label for="platform">配信プラットフォーム</label>
                         <div class="platform-selector">

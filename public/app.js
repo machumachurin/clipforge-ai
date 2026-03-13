@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPlatformSelector();
     initToneSelector();
     initGenerator();
+    initClipUrlFetcher();
     initStatCounters();
     initScrollAnimations();
 });
@@ -145,6 +146,121 @@ function initScrollAnimations() {
 function initGenerator() {
     const generateBtn = document.getElementById('generateBtn');
     generateBtn.addEventListener('click', handleGenerate);
+}
+
+/* ─── Clip URL Fetcher（TwitchクリップURL自動取得） ─── */
+function initClipUrlFetcher() {
+    const fetchBtn = document.getElementById('fetchClipBtn');
+    const clipInput = document.getElementById('clipUrl');
+
+    if (!fetchBtn || !clipInput) return;
+
+    // ボタンクリック時
+    fetchBtn.addEventListener('click', handleClipFetch);
+
+    // URLペースト時に自動で取得開始
+    clipInput.addEventListener('paste', () => {
+        setTimeout(() => {
+            if (clipInput.value.includes('twitch.tv')) {
+                handleClipFetch();
+            }
+        }, 100);
+    });
+}
+
+async function handleClipFetch() {
+    const clipInput = document.getElementById('clipUrl');
+    const fetchBtn = document.getElementById('fetchClipBtn');
+    const fetchText = fetchBtn.querySelector('.fetch-text');
+    const fetchLoading = fetchBtn.querySelector('.fetch-loading');
+    const statusEl = document.getElementById('clipStatus');
+
+    const clipUrl = clipInput.value.trim();
+
+    if (!clipUrl) {
+        showClipStatus('error', 'クリップURLを入力してください');
+        shakeElement(clipInput);
+        return;
+    }
+
+    // ローディング表示
+    fetchText.style.display = 'none';
+    fetchLoading.style.display = 'inline-flex';
+    fetchBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/clip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clipUrl })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showClipStatus('error', data.message || 'クリップ情報の取得に失敗しました');
+        } else {
+            // フォームに自動入力
+            if (data.gameName) {
+                document.getElementById('gameName').value = data.gameName;
+                highlightField('gameName');
+            }
+            if (data.channelName) {
+                document.getElementById('channelName').value = data.channelName;
+                highlightField('channelName');
+            }
+            if (data.clipTitle) {
+                document.getElementById('highlights').value = data.clipTitle;
+                highlightField('highlights');
+            }
+
+            // Twitchを自動選択
+            const twitchBtn = document.getElementById('btn-twitch');
+            if (twitchBtn && !twitchBtn.classList.contains('active')) {
+                document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+                twitchBtn.classList.add('active');
+            }
+
+            const info = [
+                data.gameName ? `🎮 ${data.gameName}` : '',
+                data.channelName ? `📺 ${data.channelName}` : '',
+                data.viewCount ? `👁️ ${data.viewCount.toLocaleString()}回視聴` : ''
+            ].filter(Boolean).join('　');
+
+            showClipStatus('success', `✅ 取得成功！ ${info}`);
+        }
+    } catch (e) {
+        showClipStatus('error', 'APIに接続できませんでした。手動で情報を入力してください。');
+    }
+
+    // ボタンリセット
+    fetchText.style.display = 'inline';
+    fetchLoading.style.display = 'none';
+    fetchBtn.disabled = false;
+}
+
+function showClipStatus(type, message) {
+    const statusEl = document.getElementById('clipStatus');
+    statusEl.style.display = 'block';
+    statusEl.className = `clip-status ${type}`;
+    statusEl.textContent = message;
+
+    // 成功時は5秒後に非表示
+    if (type === 'success') {
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function highlightField(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.style.borderColor = 'var(--color-success)';
+    field.style.boxShadow = '0 0 0 3px rgba(52, 211, 153, 0.15)';
+    setTimeout(() => {
+        field.style.borderColor = '';
+        field.style.boxShadow = '';
+    }, 2000);
 }
 
 async function handleGenerate() {
