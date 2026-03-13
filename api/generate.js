@@ -1,12 +1,10 @@
 // ClipForge AI — サーバーレス関数（Vercel用）
 // ==============================================
-// この関数はVercelのサーバー上で動き、OpenAI APIと安全に通信します。
-// ユーザーのブラウザからは直接APIキーが見えないようにしています。
-
-const OpenAI = require('openai').default || require('openai');
+// OpenAI APIと通信してコンテンツを生成する。
+// ネイティブfetchを使用（外部パッケージ依存なし）
 
 module.exports = async function handler(req, res) {
-    // CORS（クロスオリジン）対応
+    // CORS対応
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,10 +20,9 @@ module.exports = async function handler(req, res) {
     // APIキーの確認
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        // APIキーがない場合はフォールバック（テンプレート生成）を返す
         return res.status(200).json({
             fallback: true,
-            message: 'OpenAI APIキーが設定されていないため、テンプレート生成を使用しています'
+            message: 'OpenAI APIキーが設定されていません'
         });
     }
 
@@ -36,13 +33,11 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'ゲームタイトルとハイライトは必須です' });
         }
 
-        const openai = new OpenAI({ apiKey });
-
         const toneDescriptions = {
-            hype: 'テンション高め・興奮系。「ヤバい」「神」「最強」などの表現を使う。wwwや！を多用',
-            funny: 'おもしろ系・ネタ系。「草」「w」「放送事故」などの表現。ツッコミ風',
-            chill: 'まったり・癒し系。穏やかで温かい雰囲気。絵文字は控えめに',
-            skilled: 'スキル・プレイ重視。「神エイム」「クラッチ」「無双」などの表現。上手さを強調'
+            hype: 'テンション高め・興奮系。「ヤバい」「神」「最強」などの表現を使う',
+            funny: 'おもしろ系・ネタ系。「草」「w」「放送事故」などの表現',
+            chill: 'まったり・癒し系。穏やかで温かい雰囲気',
+            skilled: 'スキル・プレイ重視。「神エイム」「クラッチ」「無双」などの表現'
         };
 
         const platformLabel = platform === 'twitch' ? 'Twitch' : 'YouTube';
@@ -59,40 +54,47 @@ module.exports = async function handler(req, res) {
 - チャンネル名: ${channel}
 - トーン: ${toneDesc}
 
-以下の形式でJSON形式で出力してください（他の文章は不要）:
-
+以下のJSON形式で出力（他の文章は不要）:
 {
-  "titles": [
-    "(クリップタイトル案1 - YouTubeでクリックされるような魅力的なタイトル。【】や絵文字を効果的に使用)",
-    "(クリップタイトル案2 - 別の切り口のタイトル)",
-    "(クリップタイトル案3)",
-    "(クリップタイトル案4)",
-    "(クリップタイトル案5)"
-  ],
-  "snsPosts": [
-    "(Twitter/X用投稿文1 - 140文字以内。ハッシュタグ3-4個付き。配信の宣伝)",
-    "(Twitter/X用投稿文2 - 別のアプローチの投稿文)",
-    "(Twitter/X用投稿文3 - エンゲージメント重視の投稿文)"
-  ],
-  "description": "(YouTube/Twitch概要欄テンプレート。セクション分けして、配信情報・ハイライト・フォロー誘導を含む。━━━━で区切る)",
+  "titles": ["タイトル案1", "タイトル案2", "タイトル案3", "タイトル案4", "タイトル案5"],
+  "snsPosts": ["SNS投稿文1（ハッシュタグ付き）", "SNS投稿文2", "SNS投稿文3"],
+  "description": "概要欄テンプレート（セクション分け、配信情報、フォロー誘導含む）",
   "tags": ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6", "タグ7", "タグ8", "タグ9", "タグ10", "タグ11", "タグ12"]
 }`;
 
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'あなたは日本のゲーム配信者向けのコンテンツ生成AIです。必ずJSON形式のみで回答してください。'
-                },
-                { role: 'user', content: prompt }
-            ],
-            temperature: 0.8,
-            max_tokens: 2000,
-            response_format: { type: 'json_object' }
+        // OpenAI APIをfetchで直接呼び出し
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'あなたは日本のゲーム配信者向けのコンテンツ生成AIです。必ずJSON形式のみで回答してください。'
+                    },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.8,
+                max_tokens: 2000,
+                response_format: { type: 'json_object' }
+            })
         });
 
-        const content = completion.choices[0].message.content;
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('OpenAI APIエラー:', response.status, errorData);
+            return res.status(200).json({
+                fallback: true,
+                message: `OpenAI APIエラー: ${response.status}`
+            });
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content;
         const result = JSON.parse(content);
 
         return res.status(200).json({
@@ -102,9 +104,9 @@ module.exports = async function handler(req, res) {
 
     } catch (error) {
         console.error('AI生成エラー:', error);
-        return res.status(500).json({
-            error: 'AI生成中にエラーが発生しました',
-            details: error.message
+        return res.status(200).json({
+            fallback: true,
+            message: error.message
         });
     }
 }
