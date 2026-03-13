@@ -1,0 +1,18 @@
+# 依存関係（npmがインストールしたファイル）
+node_modules/
+
+# 秘密情報（APIキーなど）— 絶対にGitHubにアップしない！
+.env
+.env.local
+.env.production
+.env*.local
+
+# Vercel
+.vercel/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# サーバースクリプト（開発用）
+server.ps1

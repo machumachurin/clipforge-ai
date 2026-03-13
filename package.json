@@ -1,0 +1,14 @@
+{
+  "name": "clipforge-ai",
+  "version": "1.0.0",
+  "description": "配信ハイライトAI - 配信者向けコンテンツ自動生成ツール",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site, no build needed'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "openai": "^4.80.0"
+  }
+}
