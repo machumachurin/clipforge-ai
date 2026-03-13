@@ -602,20 +602,152 @@ function extractKeywords(text) {
 /* ─── Render Results ─── */
 function renderResults(results) {
     renderTitles(results.titles);
+    renderPostingTime(results.bestPostingTime);
     renderSNSPosts(results.snsPosts);
     renderDescription(results.description);
     renderTags(results.tags);
+    renderThumbnail(results.thumbnailIdea);
 }
 
 function renderTitles(titles) {
     const container = document.getElementById('titles-content');
-    container.innerHTML = titles.map((title, i) => `
-        <div class="output-item">
-            <span class="output-item-number">${i + 1}</span>
-            <span class="output-item-text">${escapeHtml(title)}</span>
-            <button class="copy-btn" onclick="copyToClipboard(this, '${escapeAttr(title)}')">📋 コピー</button>
+
+    // AI応答の新フォーマット（スコア付き）かチェック
+    if (titles.length > 0 && typeof titles[0] === 'object' && titles[0].score) {
+        container.innerHTML = titles.map((item, i) => {
+            const score = item.score;
+            const avg = Math.round((score.catchy + score.ctr + score.seo) / 3);
+            const scoreColor = avg >= 80 ? '#34d399' : avg >= 60 ? '#fbbf24' : '#f87171';
+
+            return `
+            <div class="output-item title-scored-item">
+                <div class="title-main-row">
+                    <span class="output-item-number">${i + 1}</span>
+                    <span class="output-item-text">${escapeHtml(item.text)}</span>
+                    <div class="buzz-score-badge" style="background: ${scoreColor}20; border-color: ${scoreColor}40; color: ${scoreColor}">
+                        🔥 ${avg}
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard(this, '${escapeAttr(item.text)}')">📋</button>
+                </div>
+                <div class="score-details">
+                    <div class="score-bar-group">
+                        <div class="score-bar-row">
+                            <span class="score-label">キャッチー</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width:${score.catchy}%; background:${getScoreColor(score.catchy)}"></div></div>
+                            <span class="score-value">${score.catchy}</span>
+                        </div>
+                        <div class="score-bar-row">
+                            <span class="score-label">クリック誘引</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width:${score.ctr}%; background:${getScoreColor(score.ctr)}"></div></div>
+                            <span class="score-value">${score.ctr}</span>
+                        </div>
+                        <div class="score-bar-row">
+                            <span class="score-label">SEO</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width:${score.seo}%; background:${getScoreColor(score.seo)}"></div></div>
+                            <span class="score-value">${score.seo}</span>
+                        </div>
+                    </div>
+                    <div class="score-advice">💡 ${escapeHtml(item.advice)}</div>
+                </div>
+            </div>`;
+        }).join('');
+    } else {
+        // テンプレート生成時（従来のstring配列）
+        const titleTexts = titles.map(t => typeof t === 'object' ? t.text : t);
+        container.innerHTML = titleTexts.map((title, i) => `
+            <div class="output-item">
+                <span class="output-item-number">${i + 1}</span>
+                <span class="output-item-text">${escapeHtml(title)}</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, '${escapeAttr(title)}')">📋 コピー</button>
+            </div>
+        `).join('');
+    }
+}
+
+function getScoreColor(score) {
+    if (score >= 80) return '#34d399';
+    if (score >= 60) return '#fbbf24';
+    return '#f87171';
+}
+
+function renderPostingTime(postingTime) {
+    const container = document.getElementById('posting-time-content');
+    if (!postingTime) {
+        container.closest('.output-section').style.display = 'none';
+        return;
+    }
+    container.closest('.output-section').style.display = '';
+
+    const days = postingTime.days ? postingTime.days.join('・') : '';
+    container.innerHTML = `
+        <div class="posting-time-card">
+            <div class="posting-time-main">
+                <div class="posting-time-clock">⏰</div>
+                <div class="posting-time-info">
+                    <div class="posting-time-best">${escapeHtml(postingTime.best)}</div>
+                    <div class="posting-time-days">${days ? `おすすめ曜日: ${escapeHtml(days)}` : ''}</div>
+                </div>
+            </div>
+            <div class="posting-time-reason">💡 ${escapeHtml(postingTime.reason)}</div>
         </div>
-    `).join('');
+    `;
+}
+
+function renderThumbnail(thumbnailIdea) {
+    const container = document.getElementById('thumbnail-content');
+    if (!thumbnailIdea) {
+        container.closest('.output-section').style.display = 'none';
+        return;
+    }
+    container.closest('.output-section').style.display = '';
+
+    container.innerHTML = `
+        <div class="thumbnail-idea-card">
+            <div class="thumbnail-idea-text">
+                <p>${escapeHtml(thumbnailIdea)}</p>
+            </div>
+            <button class="btn btn-outline btn-thumbnail-gen" id="genThumbnailBtn" onclick="generateThumbnail()">
+                🎨 この案でサムネイルを生成（お試し）
+            </button>
+            <div id="thumbnailResult" style="display:none;"></div>
+        </div>
+    `;
+}
+
+async function generateThumbnail() {
+    const btn = document.getElementById('genThumbnailBtn');
+    const resultDiv = document.getElementById('thumbnailResult');
+    const ideaText = document.querySelector('.thumbnail-idea-text p').textContent;
+
+    btn.textContent = '🎨 生成中...';
+    btn.disabled = true;
+    resultDiv.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/thumbnail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: ideaText })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            resultDiv.innerHTML = `<p class="thumbnail-error">❌ ${escapeHtml(data.message)}</p>`;
+        } else {
+            resultDiv.innerHTML = `
+                <img class="thumbnail-preview" src="${data.imageUrl}" alt="生成されたサムネイル">
+                <a href="${data.imageUrl}" target="_blank" class="btn btn-outline" style="margin-top: var(--space-md);">🔗 画像を開く</a>
+            `;
+        }
+        resultDiv.style.display = 'block';
+    } catch (e) {
+        resultDiv.innerHTML = '<p class="thumbnail-error">❌ サムネイル生成に失敗しました</p>';
+        resultDiv.style.display = 'block';
+    }
+
+    btn.textContent = '🎨 もう一度生成する';
+    btn.disabled = false;
 }
 
 function renderSNSPosts(posts) {

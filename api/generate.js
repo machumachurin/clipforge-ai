@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
         const toneDesc = toneDescriptions[tone] || toneDescriptions.hype;
         const channel = channelName || '配信者';
 
-        const prompt = `あなたは日本のゲーム配信・ストリーマー文化に精通したコンテンツマーケターです。
+        const prompt = `あなたは日本のゲーム配信・ストリーマー文化に精通したコンテンツマーケター兼SNSアナリストです。
 以下の配信情報から、バズるコンテンツを生成してください。
 
 【配信情報】
@@ -56,11 +56,30 @@ module.exports = async function handler(req, res) {
 
 以下のJSON形式で出力（他の文章は不要）:
 {
-  "titles": ["タイトル案1", "タイトル案2", "タイトル案3", "タイトル案4", "タイトル案5"],
-  "snsPosts": ["SNS投稿文1（ハッシュタグ付き）", "SNS投稿文2", "SNS投稿文3"],
+  "titles": [
+    {"text": "タイトル案1", "score": {"catchy": 85, "ctr": 90, "seo": 80}, "advice": "このタイトルが良い理由と改善ポイント"},
+    {"text": "タイトル案2", "score": {"catchy": 80, "ctr": 85, "seo": 75}, "advice": "アドバイス"},
+    {"text": "タイトル案3", "score": {"catchy": 75, "ctr": 80, "seo": 85}, "advice": "アドバイス"},
+    {"text": "タイトル案4", "score": {"catchy": 70, "ctr": 75, "seo": 80}, "advice": "アドバイス"},
+    {"text": "タイトル案5", "score": {"catchy": 65, "ctr": 70, "seo": 75}, "advice": "アドバイス"}
+  ],
+  "snsPosts": ["SNS投稿文1（ハッシュタグ3-4個付き）", "SNS投稿文2", "SNS投稿文3"],
   "description": "概要欄テンプレート（セクション分け、配信情報、フォロー誘導含む）",
-  "tags": ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6", "タグ7", "タグ8", "タグ9", "タグ10", "タグ11", "タグ12"]
-}`;
+  "tags": ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6", "タグ7", "タグ8", "タグ9", "タグ10", "タグ11", "タグ12"],
+  "bestPostingTime": {
+    "best": "21:00-23:00",
+    "reason": "この時間帯がおすすめの理由（ゲームジャンルや視聴者層を踏まえて）",
+    "days": ["金曜", "土曜", "日曜"]
+  },
+  "thumbnailIdea": "サムネイル画像の具体的なビジュアル案（色使い、テキスト配置、表情、エフェクトなど詳細に）"
+}
+
+注意事項:
+- titlesのscoreはcatchy(キャッチーさ),ctr(クリック誘引力),seo(検索最適化)の3項目で0-100で評価
+- scoreは正直に差をつけて。全部高いスコアにしないこと
+- adviceは具体的に（なぜこのスコアなのか、どう改善できるか）
+- bestPostingTimeはゲームジャンルと${platformLabel}の視聴者層を考慮
+- thumbnailIdeaは画像生成AIに指示できるレベルの詳細さで`;
 
         // OpenAI APIをfetchで直接呼び出し
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -74,12 +93,12 @@ module.exports = async function handler(req, res) {
                 messages: [
                     {
                         role: 'system',
-                        content: 'あなたは日本のゲーム配信者向けのコンテンツ生成AIです。必ずJSON形式のみで回答してください。'
+                        content: 'あなたは日本のゲーム配信者向けのコンテンツ生成・分析AIです。必ずJSON形式のみで回答してください。スコアは正直に差をつけて評価すること。'
                     },
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.8,
-                max_tokens: 2000,
+                max_tokens: 3000,
                 response_format: { type: 'json_object' }
             })
         });
